@@ -62,6 +62,7 @@ under the License.
         <module>examples/flink-sql-runner-example</module>
         <module>examples/flink-beam-example</module>
         <module>examples/kubernetes-client-examples</module>
+        <module>examples/kubernetes-hxf-examples</module>
         <module>examples/autoscaling</module>
     </modules>
 
