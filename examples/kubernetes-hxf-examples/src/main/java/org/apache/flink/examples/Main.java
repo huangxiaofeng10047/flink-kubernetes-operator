@@ -2,13 +2,18 @@ package org.apache.flink.examples;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.PodTemplateSpec;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import org.apache.flink.kubernetes.operator.api.FlinkDeployment;
 import org.apache.flink.kubernetes.operator.api.spec.*;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +33,7 @@ public class Main {
 
         FlinkDeploymentSpec flinkDeploymentSpec = new FlinkDeploymentSpec();
         flinkDeploymentSpec.setFlinkVersion(FlinkVersion.v1_17);
-        flinkDeploymentSpec.setImage("flink:1.17");
+        flinkDeploymentSpec.setImage("10.7.20.12:5000/flink:1.17");
 
         IngressSpec ingressSpec = new IngressSpec();
         ingressSpec.setTemplate("flink.k8s.io/{{namespace}}/{{name}}(/|$)(.*)");
@@ -37,16 +42,27 @@ public class Main {
         annotations.put("nginx.ingress.kubernetes.io/rewrite-target","/$2");
         ingressSpec.setAnnotations(annotations);
         flinkDeploymentSpec.setIngress(ingressSpec);
+        PodTemplateSpec podTemplateSpec = new PodTemplateSpec();
+        PodSpec podSpec = new PodSpec();
+        Container container = new Container();
+        container.setName("flink-main-container"); // container name 不可修改
+        EnvVar envVar01 = new EnvVar();
+        envVar01.setName("TZ");
+        envVar01.setValue("Asia/Shanghai");
+        container.setEnv(Collections.singletonList(envVar01));
+        podSpec.setContainers(Collections.singletonList(container));
+        podTemplateSpec.setSpec(podSpec);
+        flinkDeploymentSpec.setPodTemplate(podTemplateSpec);
 
         Map<String, String> flinkConfiguration = new HashMap<>();
         flinkConfiguration.put("taskmanager.numberOfTaskSlots", "2");
         flinkDeploymentSpec.setFlinkConfiguration(flinkConfiguration);
         flinkDeploymentSpec.setServiceAccount("flink");
         JobManagerSpec jobManagerSpec = new JobManagerSpec();
-        jobManagerSpec.setResource(new Resource(1.0, "2048m","2G"));
+        jobManagerSpec.setResource(new Resource(1.0, "1024m","1G"));
         flinkDeploymentSpec.setJobManager(jobManagerSpec);
         TaskManagerSpec taskManagerSpec = new TaskManagerSpec();
-        taskManagerSpec.setResource(new Resource(1.0, "2048m","2G"));
+        taskManagerSpec.setResource(new Resource(1.0, "1024m","1G"));
         flinkDeploymentSpec.setTaskManager(taskManagerSpec);
         flinkDeployment.setSpec(flinkDeploymentSpec);
         flinkDeployment
